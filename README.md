@@ -2,7 +2,7 @@
 An esoteric mini-lang for very basic LSystem stuff
 
 ## Syntax
-An `ll` file looks something like this:
+A `lingo` file looks something like this:
 ```python
 def System [
     (A) -> (BA)
