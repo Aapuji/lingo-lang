@@ -31,14 +31,14 @@ To create an array, use `[<item> <item> <...>]`
 
 To import another `ll` file, you can use `import <path>`. Then, you can refer to things from that file. For example:
 ```py
-# a.fib.ll
+# a.fib.lingo
 def System [
     (A) -> (AB)
     (B) -> (A)
 ]
 
 def do_n :f -n { loop :f n }
-# x.ll
+# x.lingo
 import a/fib
 
 fib/do_n :{print -(Hello)} -5
