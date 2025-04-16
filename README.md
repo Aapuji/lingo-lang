@@ -52,3 +52,30 @@ There are a very few operators:
 - `-` to signify a value argument
 - `:` to signify a function argument
 - `/` between a parent and child in a path
+
+# Standard Library
+The language is already minimal, so it doesn't really have much in the standard library. In the core library, accessible by default, the following are provided
+- Io
+    - `print` - writes to stdout
+    - `input` - reads from stdin
+    - `report` - writes to stderr 
+- LSystem
+    - `expand` - applies an LSystem to an LString
+    - `scan` - goes through an LString and performs an action
+    - `len` - gets the lentgh of an LString
+- Turtle 
+    - `draw` - draws a string using the given rules
+    - `save` - saves the given states (in order: position, rotation, color(if i end up supporting color))
+    -  `recall` - recalls the state at the top of the state stack
+-  Math
+    - `add` - adds two numbers
+    - `sub` - subtracts two numbers
+    - `mul` - multiplies two numbers
+    - `div` - divides two numbers, rounding down
+    - `exp` - exponentiates two numbers, rounding down
+    - `shl` - binary shift left
+    - `shr` - binary shift right
+    - `and` - boolean and
+    - `or` - boolean or
+    - `xor` - boolean xor
+    - `not` - boolean not
