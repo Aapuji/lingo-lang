@@ -48,7 +48,7 @@ You can do an `import file/*`.
 There are a very few operators:
 - `->` between two strings, creates a rule
 - `>>` between a value and anything, creates a map entry
-- `.` between two strings or array, concatenates them
+- `.` between two strings or arrays, concatenates them
 - `-` to signify a value argument
 - `:` to signify a function argument
 - `/` between a parent and child in a path
