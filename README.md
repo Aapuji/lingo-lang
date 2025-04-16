@@ -49,3 +49,6 @@ There are a very few operators:
 - `->` between two strings, creates a rule
 - `>>` between a value and anything, creates a map entry
 - `.` between two strings or array, concatenates them
+- `-` to signify a value argument
+- `:` to signify a function argument
+- `/` between a parent and child in a path
