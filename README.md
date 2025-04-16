@@ -73,8 +73,8 @@ The language is already minimal, so it doesn't really have much in the standard 
     - `mul` - multiplies two numbers
     - `div` - divides two numbers, rounding down
     - `exp` - exponentiates two numbers, rounding down
-    - `shl` - binary shift left
-    - `shr` - binary shift right
+    - `shl` - binary shift left, circulating with size of the most significant bit (`shl -46 -2` is equal to `48`: `0010 1110 -> 0011 1010`) 
+    - `shr` - binary shift right, circulating with size of the most significant bit (`shr -46 -2` is equal to `43`: `0010 1110 -> 0010 1011`)
     - `and` - boolean and
     - `or` - boolean or
     - `xor` - boolean xor
