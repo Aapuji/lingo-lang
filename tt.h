@@ -2,29 +2,29 @@
 #define TT_H
 
 enum tt {
-    ERR,
-    EOF, EOL,
+    TT_ERR,
+    TT_EOF, TT_EOL,
     // Identifiers
-    IDENT,
+    TT_IDENT,
     // Literals
-    STRING,
-    NUMBER,
-    TRUE, FALSE,
+    TT_STRING,
+    TT_NUMBER,
+    TT_TRUE, TT_FALSE,
     // Operators
-    SLASH,
-    DOT,
-    RARROW,
-    RSHIFT,
-    DASH,
-    COLON,
+    TT_SLASH,
+    TT_DOT,
+    TT_RARROW,
+    TT_RSHIFT,
+    TT_DASH,
+    TT_COLON,
     // Separators
-    LPAREN, RPAREN,
-    LBRACKET, RBRACKET,
-    LBRACE, RBRACE,
+    TT_LPAREN, TT_RPAREN,
+    TT_LBRACKET, TT_RBRACKET,
+    TT_LBRACE, TT_RBRACE,
     // Keywords
-    DEF,
-    SET,
-    IMPORT
+    TT_DEF,
+    TT_SET,
+    TT_IMPORT
 };
 
 #endif

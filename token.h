@@ -10,6 +10,7 @@ struct token {
         int num;
         char *str;
     } data;
+    char *lexeme;
 };
 
 struct token init_token(enum tt tt, int line, char *lexeme, int len);

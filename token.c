@@ -1,16 +1,19 @@
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include <errno.h>
 
-#include "common.h"
+#include "tt.h"
 #include "token.h"
 
-typedef enum {
+enum str2int_errno {
     STR2INT_SUCCESS,
     STR2INT_OVERFLOW,
     STR2INT_UNDERFLOW,
     STR2INT_INCONVERTIBLE
-} str2int_errno;
+};
 
-str2int_errno str2int(int *out, char *s) {
+enum str2int_errno str2int(int *out, char *s) {
     char *end;
     if (s[0] == '\0' || isspace((unsigned char) s[0]))
         return STR2INT_INCONVERTIBLE;
@@ -29,18 +32,24 @@ str2int_errno str2int(int *out, char *s) {
     return STR2INT_SUCCESS;
 }
 
+/// Creates token given type, line number, lexeme, and length of lexeme (not including null byte).
 struct token init_token(enum tt tt, int line, char *lexeme, int len) {
     struct token token;
     token.tt = tt;
     token.line = line;
+    
+    char str[len + 1];
+    token.lexeme = str;
+    strncpy(token.lexeme, lexeme, len);
+    token.lexeme[len] = '\0';
 
     switch (tt) {
-        case STRING:
-            token.data.str = strndup(lexeme, len+1);
+        case TT_STRING: {
+            token.data.str = ""; // Actually won't be used, i know, it's pretty ugly, but oh well
             break;
-        case NUMBER:
-            char *s = strndup(lexeme, len+1);
-            switch (str2int(&token.data.num, s)) {
+        }
+        case TT_NUMBER: {
+            switch (str2int(&token.data.num, token.lexeme)) {
                 case STR2INT_OVERFLOW:
                     perror("Error: Number too big");
                     exit(1);
@@ -54,9 +63,11 @@ struct token init_token(enum tt tt, int line, char *lexeme, int len) {
                     break;
             }
             break;
+        }
         default:
             break;
     }
 
     return token;
 }
+
