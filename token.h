@@ -6,6 +6,7 @@
 struct token {
     enum tt tt;
     int line;
+    int col;
     union {
         int num;
         char *str;
@@ -13,6 +14,6 @@ struct token {
     char *lexeme;
 };
 
-struct token init_token(enum tt tt, int line, char *lexeme, int len);
+struct token init_token(enum tt tt, int line, int col, char *lexeme, int len);
 
 #endif

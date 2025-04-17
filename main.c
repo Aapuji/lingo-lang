@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "lexer.h"
+
 int main(int argc, char **argv) {
-    printf("%li", __STDC_VERSION__);
+    printf("STDC-v: %li\n", __STDC_VERSION__);
 
     if (argc < 2) {
         fprintf(stderr, "Incorrect number of arguments.");

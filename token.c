@@ -33,10 +33,11 @@ enum str2int_errno str2int(int *out, char *s) {
 }
 
 /// Creates token given type, line number, lexeme, and length of lexeme (not including null byte).
-struct token init_token(enum tt tt, int line, char *lexeme, int len) {
+struct token init_token(enum tt tt, int line, int col, char *lexeme, int len) {
     struct token token;
     token.tt = tt;
     token.line = line;
+    token.col = col;
     
     char str[len + 1];
     token.lexeme = str;
