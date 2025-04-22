@@ -38,9 +38,7 @@ struct token init_token(enum tt tt, int line, int col, char *lexeme, int len) {
     token.tt = tt;
     token.line = line;
     token.col = col;
-    
-    char str[len + 1];
-    token.lexeme = str;
+    token.lexeme = (char *) malloc(sizeof(char) * (len + 1));
     strncpy(token.lexeme, lexeme, len);
     token.lexeme[len] = '\0';
 

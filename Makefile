@@ -1,6 +1,6 @@
 TARGET = main.exe
 CC = gcc
-CFLAGS = -Wall -std=c2x
+CFLAGS = -Wall -Wextra -std=c2x
 
 .PHONY: clean
 

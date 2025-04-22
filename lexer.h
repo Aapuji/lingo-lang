@@ -1,12 +1,15 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "token.h"
 
 struct lexer {
-    char *ch;
+    FILE *src;
+    char ch;
+    char prev;
     int line;
     int col;
     int comment_depth;
@@ -29,13 +32,13 @@ struct lexer_error {
     int col;
 };
 
-struct lexer init_lexer(char *src);
-/// Lexes the source given the lexer, returning a `TT_EOF`-terminated vector of tokens and updates an array of errors produced and number of error generated.
+struct lexer init_lexer(FILE *src);
+/// Lexes the source given the lexer, returning a `TT_EOF`-terminated vector of tokens and updates an array of errors produced and number of errors generated.
 ///
 /// Notes;
-/// - `num_errors` should contain number of `lexer_error`s `errors` can contain initially.
+/// - `num_errors` should contain number of `lexer_error`s `errors` can contain initially. If it is `0`, `errors` will be allocated.
 /// - `errors` may be reallocated.
-/// - They should not be `NULL`.
+/// - `num_errors` should not be `NULL`.
 struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_errors);
 
 #endif
