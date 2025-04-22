@@ -3,8 +3,10 @@
 #include <ctype.h>
 
 #include "lexer.h"
+#include "util.h"
 #include "token.h"
 #include "tt.h"
+#include "util.h"
 
 struct lexer_error init_error(enum lexer_errno lerrno, char ch, int line, int col) {
     return (struct lexer_error) { lerrno, ch, line, col };
@@ -120,7 +122,7 @@ struct lexer_result lex_token(struct lexer *lexer) {
                 next(lexer);
                 return ok(init_token(TT_RSHIFT, lexer->line, lexer->col, ">>", 2));
             } else {
-                return err(init_error(LEXER_UNKNOWN, lexer->ch, lexer->line, lexer->col));
+                return err(init_error(LEXER_UNKNOWN, prev(lexer), lexer->line, lexer->col - 1));
             }
         }
         case ':':
@@ -129,13 +131,13 @@ struct lexer_result lex_token(struct lexer *lexer) {
         case '(': break;
         default:
             next(lexer);
-            return err(init_error(LEXER_UNKNOWN, lexer->ch, lexer->line, lexer->col));
+            return err(init_error(LEXER_UNKNOWN, prev(lexer), lexer->line, lexer->col - 1));
     }
 
     // Make sure in `lex` to check if src is 0 length, because this will crash if that happens
-    if (num_nested_comments(lexer) > 0) return err(init_error(LEXER_UNTERMINATED_COMMENT, prev(lexer), lexer->line, lexer->col));
+    if (num_nested_comments(lexer) > 0) return err(init_error(LEXER_UNTERMINATED_COMMENT, prev(lexer), lexer->line, lexer->col - 1));
 
-    else return err(init_error(LEXER_INCOMPLETE, lexer->ch, lexer->line, lexer->col));
+    else return err(init_error(LEXER_INCOMPLETE, prev(lexer), lexer->line, lexer->col - 1));
 }
 
 struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_errors) {
@@ -147,9 +149,13 @@ struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_e
         return eof;
     }
 
-    if (*num_errors == 0) {
+    if (*num_errors == 0 && errors == NULL) {
         *num_errors = 8;
-        errors = (struct lexer_error *) realloc(errors, sizeof(struct lexer_error) * *num_errors);
+        errors = (struct lexer_error *) malloc(sizeof(struct lexer_error) * *num_errors);
+        if (errors == NULL) {
+            perror("Malloc failed");
+            exit(1);
+        } 
     }
     size_t err_cap = *num_errors;
     *num_errors = 0;
@@ -180,8 +186,13 @@ struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_e
             }
         } else if (lexer->comment_depth > 0 && lexer->ch == '*') {
             if (peek(lexer) == '/') {
-                lexer->comment_depth -= 1;
+                next(lexer); // To move ch: '*' -> '/'
+                lexer->comment_depth--;
             }
+
+            // If not in comment anymore, move ch: '/' -> {next}
+            // Otherwise, the Skip Comments section will handle it (or otherwise it would skip the char right after the '/')
+            if (lexer->comment_depth == 0) next(lexer);
         }
 
         // Skip Comments
@@ -199,33 +210,18 @@ struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_e
         // Append Token or Error
         struct lexer_result result = lex_token(lexer);
         if (result.result) {
-            if (tok_len >= tok_cap) {
-                tok_cap *= 2;
-                tokens = (struct token *) realloc(tokens, sizeof(struct token) * tok_cap);
-    
-                if (tokens == NULL) {
-                    perror("Realloc failed");
-                    exit(1);
-                }
-            }
-
-            tokens[tok_len++] = result.success;
+            RESIZING_APPEND(tokens, struct token, tok_len, tok_cap, result.success)
         } else {
-            if (*err_len >= err_cap) {
-                err_cap *= 2;
-                errors = (struct lexer_error *) realloc(errors, sizeof(struct lexer_error) * err_cap);
-
-                if (errors == NULL) {
-                    perror("Realloc failed");
-                    exit(1);
-                }
-            }
-
-            errors[*err_len] = result.error;
-            *err_len = *err_len + 1;
+            RESIZING_APPEND(errors, struct lexer_error, *err_len, err_cap, result.error)
         }
     }
 
+    // Check if Comment is Unterminated at EOF
+    if (lexer->comment_depth > 0) {
+        RESIZING_APPEND(errors, struct lexer_error, *err_len, err_cap, init_error(LEXER_UNTERMINATED_COMMENT, prev(lexer), lexer->line, lexer->col - 1))
+    }
+
+    // Append TT_EOF Token
     if (tok_len == tok_cap) {
         tok_cap += 1;
         tokens = (struct token *) realloc(tokens, sizeof(struct token) * tok_cap);

@@ -21,8 +21,8 @@ int main(int argc, char **argv) {
     printf("File: %s\n", argv[1]);
 
     struct lexer lexer = init_lexer(file);
-    struct lexer_error *errors = NULL;
-    size_t num_errors = 0;
+    struct lexer_error *errors = malloc(sizeof(struct lexer_error) * 8);
+    size_t num_errors = 8;
 
     struct token *tokens = lex(&lexer, errors, &num_errors);
 
@@ -40,10 +40,11 @@ int main(int argc, char **argv) {
     printf("next: %i", fgetc(file));
 
     printf("\n==Errors== \n");
-    for (size_t i = 0; i < num_errors; i++) {
-        printf("error no: %i\n", errors[i].line);
-        printf("HI");
-    }
+    if (num_errors == 0) printf("No Errors\n");
+    else
+        for (size_t i = 0; i < num_errors; i++) {
+            printf("error errno:%i @ %c @ %i:%i\n", errors[i].lerrno, errors[i].ch, errors[i].line, errors[i].col);
+        }
 
     fclose(file);
     free(errors);

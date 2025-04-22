@@ -18,8 +18,8 @@ struct lexer {
 };
 
 enum lexer_errno {
-    LEXER_INCOMPLETE = 0,
-    LEXER_UNKNOWN,
+    LEXER_INCOMPLETE = 0,           // Incomplete token
+    LEXER_UNKNOWN, 
     LEXER_UNTERMINATED_COMMENT,
     LEXER_UNTERMINATED_STRING,
     LEXER_MULTILINE_STRING
@@ -35,10 +35,11 @@ struct lexer_error {
 struct lexer init_lexer(FILE *src);
 /// Lexes the source given the lexer, returning a `TT_EOF`-terminated vector of tokens and updates an array of errors produced and number of errors generated.
 ///
-/// Notes;
-/// - `num_errors` should contain number of `lexer_error`s `errors` can contain initially. If it is `0`, `errors` will be allocated.
-/// - `errors` may be reallocated.
-/// - `num_errors` should not be `NULL`.
+/// @param lexer Pointer to the lexer
+/// @param num_errors Contains number of `lexer_error`s `errors` can contain initially. If it is 0 and if `errors` is `NULL`, then it will be allocated. Should not be `NULL`.
+/// @param errors Contains pointer to `lexer_error` array, may be reallocated as many times as needed.
+///
+/// @returns An `TT-EOF`-terminated array of `token`s.
 struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_errors);
 
 #endif
