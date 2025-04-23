@@ -1,12 +1,28 @@
-TARGET = main.exe
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c2x
+TARGET	= main.exe
+CC 		= gcc
+CFLAGS 	= -Wall -Wextra -std=c2x
+LDFLAGS = -lm
+ODIR 	= obj
 
-.PHONY: clean
+SRC 	= $(wildcard *.c)
+OBJ		= $(patsubst %.c,$(ODIR)/%.o,$(SRC))
+DEP		= $(OBJ:.o=.d) 
 
-$(TARGET): *.c *.h
-	$(CC) $^ $(CFLAGS) -o $@
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(ODIR):
+	mkdir $@
+
+$(ODIR)/%.o: %.c | $(ODIR)
+	$(CC) -c $< $(CFLAGS) -o $@
+
+$(TARGET): $(OBJ)
+	$(CC) $^ $(LDFLAGS) -o $@
 
 clean:
 	del /f $(TARGET)
-	del /f *.o
+	del /f $(ODIR)\*.o $(ODIR)\*.d
+
+-include $(DEP)
