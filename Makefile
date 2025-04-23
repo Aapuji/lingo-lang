@@ -1,12 +1,12 @@
-TARGET	= main.exe
-CC 		= gcc
-CFLAGS 	= -Wall -Wextra -std=c2x
+TARGET  = main.exe
+CC      = gcc
+CFLAGS  = -Wall -Wextra -std=c2x
 LDFLAGS = -lm
-ODIR 	= obj
+ODIR    = obj
 
-SRC 	= $(wildcard *.c)
-OBJ		= $(patsubst %.c,$(ODIR)/%.o,$(SRC))
-DEP		= $(OBJ:.o=.d) 
+SRC     = $(wildcard *.c)
+OBJ     = $(patsubst %.c,$(ODIR)/%.o,$(SRC))
+DEP     = $(OBJ:.o=.d) 
 
 .PHONY: all clean
 
