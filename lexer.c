@@ -93,6 +93,95 @@ int num_nested_comments(struct lexer *lexer) {
     return lexer->comment_depth - (lexer->comment_depth & 0x1);
 }
 
+struct lexer_result lex_string(struct lexer *lexer) {
+    int line = lexer->line;
+    int col = lexer->col;
+
+    size_t len = 0;
+    size_t cap = 8;
+    char *str = malloc(sizeof(char) * cap);
+
+    int num_trailing_bs;
+
+    next(lexer);
+
+    // While not )
+    while (lexer->ch != ')' || num_trailing_bs % 2 != 0) {
+        if (at_end(lexer)) {
+            return err(init_error(LEXER_UNTERMINATED_STRING, prev(lexer), lexer->line, lexer->col));
+        }
+
+        if (lexer->ch == '\\') num_trailing_bs++;
+        else num_trailing_bs = 0;
+
+        RESIZING_APPEND(str, char, len, cap, lexer->ch)
+
+        next(lexer);
+    }
+    next(lexer);
+
+    if (len == cap) {
+        str = (char *) realloc(str, sizeof(char) * ++cap);
+        if (str == NULL) {
+            perror("Realloc failed");
+            exit(1);
+        }
+    }
+    str[len++] = '\0';
+
+    printf("STR: %s\n", str);
+
+    // Since no error, it will store the line:col position of the start of the string.
+    return ok(init_token(TT_STRING, line, col, str, len));
+}
+
+/// Argument `base` must either be 2, 3, 4, 8, 10, 16, or 36.
+///
+/// Must be called only when `lexer->ch` is an alphanumeric character.
+///
+/// Argument `base_char` is a char representing the base prefix (eg. b/B for binary, etc.), or is '\0' if there was no base string.
+struct lexer_result lex_number(struct lexer *lexer, int base, char base_char) {
+    int cap = 8;
+    int len = base_char == '\0' ? 1 : 2;
+    char *lexeme = malloc(sizeof(char) * cap);
+    lexeme[0] = '0';
+    lexeme[1] = base_char;
+
+    while (isalnum(lexer->ch)) {
+        if (isdigit(lexer->ch)) {
+            if (lexer->ch >= '0' + base) err(init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col));
+        } else if (isalpha(lexer->ch)) {
+            if (base <= 10) return err(init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col));
+
+            base -= 10;
+            char ch = tolower(lexer->ch);
+
+            if (ch >= 'a' + base) err(init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col));
+        }
+
+        RESIZING_APPEND(lexeme, char, len, cap, lexer->ch)
+        next(lexer);
+    }
+
+    // Add null byte
+    if (len == cap) {
+        lexeme = (char *) realloc(lexeme, sizeof(char) * ++cap);
+        if (lexeme == NULL) {
+            perror("Realloc failed");
+            exit(1);
+        }
+    }
+    lexeme[len++] = '\0';
+
+    printf("NUM: %s", lexeme);
+
+    return ok(init_token(TT_NUMBER, lexer->line, lexer->col, lexeme, len));
+}
+
+//struct lexer_result lex_ident(struct lexer *lexer) {
+
+//}
+
 // Should not ever be at a comment.
 struct lexer_result lex_token(struct lexer *lexer) {
     switch (lexer->ch) {
@@ -128,10 +217,58 @@ struct lexer_result lex_token(struct lexer *lexer) {
         case ':':
             next(lexer);
             return ok(init_token(TT_COLON, lexer->line, lexer->col, ":", 1));
-        case '(': break;
-        default:
+        case '0': {
+            char ch = peek(lexer);
+
             next(lexer);
-            return err(init_error(LEXER_UNKNOWN, prev(lexer), lexer->line, lexer->col - 1));
+            if (ch == 'b' || ch == 'B') {
+                next(lexer);
+                return lex_number(lexer, 2, ch);
+            } else if (ch == 't' || ch == 'T') {
+                next(lexer);
+                return lex_number(lexer, 3, ch);
+            } else if (ch == 'q' || ch == 'Q') {
+                next(lexer);
+                return lex_number(lexer, 4, ch);
+            } else if (ch == 'o' || ch == 'O') {
+                next(lexer);
+                return lex_number(lexer, 8, ch);
+            } else if (ch == 'd' || ch == 'D') {
+                next(lexer);
+                return lex_number(lexer, 10, ch);
+            } else if (ch == 'x' || ch == 'd') {
+                next(lexer);
+                return lex_number(lexer, 16, ch);
+            } else if (ch == 'z' || ch == 'Z') {
+                next(lexer);
+                return lex_number(lexer, 36, ch);
+            } else if (isdigit(ch)) {
+                return lex_number(lexer, 10, '\0');
+            } else {
+                return ok(init_token(TT_NUMBER, lexer->line, lexer->col, "0", 0));
+            }
+        }
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            return lex_number(lexer, 10, '\0');
+        case '(':
+            return lex_string(lexer);
+        case '[':
+        case '{':
+        default:
+            if (isalpha(lexer->ch)) {
+                //return lex_ident(lexer);
+            } else {
+                next(lexer);
+                return err(init_error(LEXER_UNKNOWN, prev(lexer), lexer->line, lexer->col - 1));
+            }
     }
 
     // Make sure in `lex` to check if src is 0 length, because this will crash if that happens
@@ -218,7 +355,12 @@ struct token *lex(struct lexer *lexer, struct lexer_error *errors, size_t *num_e
 
     // Check if Comment is Unterminated at EOF
     if (lexer->comment_depth > 0) {
-        RESIZING_APPEND(errors, struct lexer_error, *err_len, err_cap, init_error(LEXER_UNTERMINATED_COMMENT, prev(lexer), lexer->line, lexer->col - 1))
+        RESIZING_APPEND(
+            errors, 
+            struct lexer_error, 
+            *err_len, 
+            err_cap, 
+            init_error(LEXER_UNTERMINATED_COMMENT, prev(lexer), lexer->line, lexer->col - 1))
     }
 
     // Append TT_EOF Token
