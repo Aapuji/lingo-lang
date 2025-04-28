@@ -7,91 +7,52 @@
 #include "tt.h"
 #include "token.h"
 
-// Define my own strtol using a base implementation
-// Thanks to Regents of University of California
-long strtol_modified(const char *nptr, char **endptr, register int base) {
-    register const char *s = nptr;
-    register unsigned long acc;
-    register int c;
-    register unsigned long cutoff;
-    register int neg = 0, any, cutlim;
-
-    do {
-        c = *s++;
-    } while (isspace(c));
-
-    if (c == '-') {
-        neg = 1;
-        c = *s++;
-    } else if (c == '+')
-        c = *s++;
-    
-    if (c == '0') {
-        switch (*s) {
-            case 'b':
-            case 'B':
-                base = 2;
-                break;
-            case 't':
-            case 'T':
-                base = 3;
-                break;
-            case 'q':
-            case 'Q':
-                base = 4;
-                break;
-            case 'o':
-            case 'O':
-                base = 8;
-                break;
-            case 'd':
-            case 'D':
-                base = 10;
-                break;
-            case 'x':
-            case 'X':
-                base = 16;
-                break;
-            case 'z':
-            case 'Z':
-                base = 36;
-                break;
-            default:
-                base = 10;
-        }
-
-        c = s[1];
-        s += 2;
-    }
-
-    cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
-    cutlim = cutoff % (unsigned long)base;
-    cutoff /= (unsigned long)base;
-    for (acc = 0, any = 0;; c = *s++) {
-        if (isdigit(c))
-            c -= '0';
-        else if (isalpha(c))
-            c -= isupper(c) ? 'A' - 10 : 'a' - 10;
-        else
-            break;
-        if (c >= base)
-            break;
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
-            any = -1;
-        else {
-            any = 1;
-            acc *= base;
-            acc += c;
+// Str should not be NULL
+int my_strtol(const char *str) {
+    int base = 10;
+    if (str[0] == '0' && str[1]) {
+        char prefix = tolower(str[1]);
+        switch (prefix) {
+            case 'b': base = 2;  str += 2; break;
+            case 't': base = 3;  str += 2; break;
+            case 'q': base = 4;  str += 2; break;
+            case 'o': base = 8;  str += 2; break;
+            case 'd': base = 10; str += 2; break;
+            case 'x': base = 16; str += 2; break;
+            case 'z': base = 36; str += 2; break;
+            default: break; // unknown prefix: treat as decimal
         }
     }
-    if (any < 0) {
-        acc = neg ? LONG_MIN : LONG_MAX;
-        errno = ERANGE;
-    } else if (neg)
-        acc = -acc;
-    if (endptr != 0)
-        *endptr = (char *) (any ? s - 1 : nptr);
-    return (acc);
+
+    long result = 0;
+    while (*str != '\0') {
+        char c = *str;
+        int value;
+
+        if (isdigit(c)) {
+            value = c - '0';
+        } else if (isalpha(c)) {
+            value = tolower(c) - 'a' + 10; // a->10, b->11, ...
+        } else {
+            break; // Non-digit character stops parsing
+        }
+
+        if (value >= base) {
+            break; // Invalid digit for base stops parsing
+        }
+
+        // Overflow protection for long (not int!)
+        if (result > (LONG_MAX - value) / base) {
+            // Clamp to INT_MAX
+            result = LONG_MAX;
+            break;
+        }
+
+        result = result * base + value;
+        str++;
+    }
+
+    return result;
 }
 
 enum str2int_errno {
@@ -102,20 +63,16 @@ enum str2int_errno {
 };
 
 enum str2int_errno str2int(int *out, const char *s) {
-    char *end;
     if (s[0] == '\0' || isspace((unsigned char) s[0]))
         return STR2INT_INCONVERTIBLE;
     errno = 0;
-    long l = strtol_modified(s, &end, 10);
-    
+    long l = my_strtol(s);
+
     /* Both checks are needed because INT_MAX == LONG_MAX is possible. */
     if (l > INT_MAX || (errno == ERANGE && l == LONG_MAX))
         return STR2INT_OVERFLOW;
     if (l < INT_MIN || (errno == ERANGE && l == LONG_MIN))
         return STR2INT_UNDERFLOW;
-    if (*end != '\0')
-        return STR2INT_INCONVERTIBLE;
-    printf("NUM: %li", l);
     *out = l;
     return STR2INT_SUCCESS;
 }
@@ -184,6 +141,7 @@ struct token init_token(enum tt tt, int line, int col, char *lexeme, int len) {
             break;
         }
         case TT_NUMBER: {
+            printf("NUM lexeme in TT_NUMBER: %s", token.lexeme);
             switch (str2int(&token.data.num, token.lexeme)) {
                 case STR2INT_OVERFLOW:
                     perror("Error: Number too big");

@@ -141,26 +141,52 @@ struct lexer_result lex_string(struct lexer *lexer) {
 ///
 /// Argument `base_char` is a char representing the base prefix (eg. b/B for binary, etc.), or is '\0' if there was no base string.
 struct lexer_result lex_number(struct lexer *lexer, int base, char base_char) {
+    struct lexer_error error;
+    bool had_error = false;
+    
     int cap = 8;
-    int len = base_char == '\0' ? 1 : 2;
+    int len = base_char == '\0' ? 0 : 2;
     char *lexeme = malloc(sizeof(char) * cap);
     lexeme[0] = '0';
     lexeme[1] = base_char;
 
     while (isalnum(lexer->ch)) {
+        printf("CHI: %c", lexer->ch);
         if (isdigit(lexer->ch)) {
-            if (lexer->ch >= '0' + base) err(init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col));
+            if (lexer->ch >= '0' + base && !had_error) {
+                had_error = true;
+                error = init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col);
+                next(lexer);
+                continue;
+            }
         } else if (isalpha(lexer->ch)) {
-            if (base <= 10) return err(init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col));
+            if (base <= 10 && !had_error) {
+                had_error = true;
+                error = init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col);
+                next(lexer);
+                continue;
+            }
 
-            base -= 10;
             char ch = tolower(lexer->ch);
 
-            if (ch >= 'a' + base) err(init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col));
+            if (ch >= 'a' + base - 10 && !had_error) {
+                had_error = true;
+                error = init_error(LEXER_INVALID_DIGIT, lexer->ch, lexer->line, lexer->col);
+                next(lexer);
+                continue;
+            }
         }
 
         RESIZING_APPEND(lexeme, char, len, cap, lexer->ch)
         next(lexer);
+    }
+
+    printf("\nNEXT IN NUM: %c\n", lexer->ch);
+    printf("had error: %i\n", true);
+
+    if (had_error) {
+        printf("ERROR in num errno:%i @ %c @ %i:%i\n", error.lerrno, error.ch, error.line, error.col);
+        return err(error);
     }
 
     // Add null byte
@@ -172,8 +198,6 @@ struct lexer_result lex_number(struct lexer *lexer, int base, char base_char) {
         }
     }
     lexeme[len++] = '\0';
-
-    printf("NUM: %s", lexeme);
 
     return ok(init_token(TT_NUMBER, lexer->line, lexer->col, lexeme, len));
 }
@@ -236,7 +260,7 @@ struct lexer_result lex_token(struct lexer *lexer) {
             } else if (ch == 'd' || ch == 'D') {
                 next(lexer);
                 return lex_number(lexer, 10, ch);
-            } else if (ch == 'x' || ch == 'd') {
+            } else if (ch == 'x' || ch == 'X') {
                 next(lexer);
                 return lex_number(lexer, 16, ch);
             } else if (ch == 'z' || ch == 'Z') {

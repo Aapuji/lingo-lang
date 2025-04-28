@@ -25,14 +25,17 @@ int main(int argc, char **argv) {
     size_t num_errors = 8;
 
     struct token *tokens = lex(&lexer, errors, &num_errors);
-
     int num_tok = 0;
-    printf("\nnumtok: %i numerr: %zu\n", num_tok, num_errors);
+
     printf("\n== Tokens ==\n");
     for (struct token *token = tokens; token->tt != TT_EOF; token++) {
-        printf("token tt:%i l:%s @ %i:%i\n", token->tt, token->lexeme, token->line, token->col);
+        
+        printf("token tt:%i l:%s d:%i @ %i:%i\n", token->tt, token->lexeme, token->tt == TT_NUMBER ? token->data.num : -1, token->line, token->col);
         num_tok++;
     }
+
+    printf("\nnumtok: %i numerr: %zu\n", num_tok, num_errors);
+
 
     printf("next: %i", fgetc(file));
 
